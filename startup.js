@@ -7,6 +7,20 @@ console.log('🚀 Starting Minecraft Telegram Bot System...');
 console.log(`📅 Startup time: ${new Date().toISOString()}`);
 console.log(`🌐 Port: ${process.env.PORT || 3000}`);
 console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+console.log(`🔧 Node.js version: ${process.version}`);
+
+// فحص إصدار Node.js
+const nodeVersion = process.version;
+const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0]);
+
+if (majorVersion < 22) {
+    console.error(`❌ Node.js version ${nodeVersion} is not supported`);
+    console.error('⚠️ This application requires Node.js 22.0.0 or higher');
+    console.error('💡 Please upgrade Node.js or use the Docker deployment');
+    process.exit(1);
+}
+
+console.log('✅ Node.js version check passed');
 
 // فحص متغيرات البيئة المطلوبة
 const requiredEnvVars = ['TELEGRAM_BOT_TOKEN'];

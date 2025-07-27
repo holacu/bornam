@@ -1,5 +1,5 @@
-# استخدام Node.js 18 LTS كصورة أساسية
-FROM node:18-alpine
+# استخدام Node.js 22 LTS كصورة أساسية (مطلوب لـ mineflayer)
+FROM node:22-alpine
 
 # تعيين متغيرات البيئة
 ENV NODE_ENV=production
