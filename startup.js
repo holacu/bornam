@@ -23,6 +23,15 @@ if (missingVars.length > 0) {
 
 console.log('✅ Environment variables check passed');
 
+// فحص التبعيات
+console.log('🔍 Checking dependencies...');
+try {
+    require('./check-dependencies');
+    console.log('✅ Dependencies check passed');
+} catch (error) {
+    console.log('⚠️ Dependencies check failed, continuing anyway:', error.message);
+}
+
 // إنشاء خادم بسيط للاستجابة الفورية
 const port = process.env.PORT || 3000;
 const quickServer = http.createServer((req, res) => {

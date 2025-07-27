@@ -4,33 +4,58 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 بدء تنظيف raknet-native...');
+console.log('🔧 بدء تنظيف المكتبات المشكلة...');
 
 // مسارات محتملة لـ raknet-native
-const possiblePaths = [
+const raknetPaths = [
     path.join(__dirname, 'node_modules', 'raknet-native'),
     path.join(__dirname, 'node_modules', 'bedrock-protocol', 'node_modules', 'raknet-native'),
     path.join(__dirname, 'node_modules', '@types', 'raknet-native')
 ];
 
-let removed = false;
+// مسارات محتملة لـ sqlite3 bindings المشكلة
+const sqlite3Paths = [
+    path.join(__dirname, 'node_modules', 'sqlite3', 'build'),
+    path.join(__dirname, 'node_modules', 'sqlite3', 'lib', 'binding')
+];
+
+let raknetRemoved = false;
+let sqlite3Cleaned = false;
 
 // إزالة raknet-native من جميع المسارات المحتملة
-possiblePaths.forEach(raknetPath => {
+raknetPaths.forEach(raknetPath => {
     if (fs.existsSync(raknetPath)) {
         try {
             console.log(`🗑️ إزالة raknet-native من: ${raknetPath}`);
             fs.rmSync(raknetPath, { recursive: true, force: true });
             console.log('✅ تم حذف raknet-native بنجاح');
-            removed = true;
+            raknetRemoved = true;
         } catch (error) {
             console.log('⚠️ تعذر حذف raknet-native:', error.message);
         }
     }
 });
 
-if (!removed) {
+// تنظيف sqlite3 bindings المشكلة
+sqlite3Paths.forEach(sqlite3Path => {
+    if (fs.existsSync(sqlite3Path)) {
+        try {
+            console.log(`🧹 تنظيف sqlite3 bindings من: ${sqlite3Path}`);
+            fs.rmSync(sqlite3Path, { recursive: true, force: true });
+            console.log('✅ تم تنظيف sqlite3 bindings');
+            sqlite3Cleaned = true;
+        } catch (error) {
+            console.log('⚠️ تعذر تنظيف sqlite3 bindings:', error.message);
+        }
+    }
+});
+
+if (!raknetRemoved) {
     console.log('✅ raknet-native غير موجود');
+}
+
+if (!sqlite3Cleaned) {
+    console.log('✅ sqlite3 bindings نظيفة');
 }
 
 // إنشاء ملف بديل فارغ

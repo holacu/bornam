@@ -1,4 +1,18 @@
-const sqlite3 = require('sqlite3').verbose();
+// محاولة تحميل sqlite3 مع fallback آمن
+let sqlite3;
+let useFallback = false;
+
+try {
+    sqlite3 = require('sqlite3').verbose();
+    console.log('✅ تم تحميل sqlite3 بنجاح');
+} catch (error) {
+    console.log('⚠️ فشل تحميل sqlite3، استخدام fallback:', error.message);
+    useFallback = true;
+    const DatabaseFallback = require('./database-fallback');
+    module.exports = DatabaseFallback;
+    return;
+}
+
 const path = require('path');
 const fs = require('fs');
 

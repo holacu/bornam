@@ -30,10 +30,12 @@ RUN apk add --no-cache \
 # نسخ ملفات package.json و package-lock.json و .npmrc
 COPY package*.json .npmrc ./
 
-# تثبيت التبعيات مع تجاهل raknet-native
-RUN npm install --only=production --ignore-scripts --no-audit --no-fund --legacy-peer-deps || \
-    (echo "⚠️ فشل التثبيت الأول، محاولة بدون legacy-peer-deps..." && \
-     npm install --only=production --ignore-scripts --no-audit --no-fund) && \
+# تثبيت التبعيات مع تجاهل المكتبات المشكلة
+RUN npm install --only=production --ignore-scripts --no-audit --no-fund --legacy-peer-deps --ignore-optional || \
+    (echo "⚠️ فشل التثبيت الأول، محاولة بدون optional dependencies..." && \
+     npm install --only=production --ignore-scripts --no-audit --no-fund --ignore-optional) || \
+    (echo "⚠️ فشل التثبيت الثاني، محاولة أساسية..." && \
+     npm install --ignore-scripts --no-audit --no-fund) && \
     npm cache clean --force
 
 # نسخ postinstall.js وتشغيله لتنظيف raknet-native
