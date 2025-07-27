@@ -1,5 +1,13 @@
 [variables]
 NODE_ENV = "production"
+NPM_CONFIG_IGNORE_SCRIPTS = "true"
+NPM_CONFIG_LEGACY_PEER_DEPS = "true"
+
+[phases.setup]
+nixPkgs = ["nodejs_18", "python3", "gcc", "gnumake", "cmake"]
+
+[phases.install]
+cmds = ["npm install --ignore-scripts --legacy-peer-deps"]
 
 [start]
 cmd = "node index.js"
