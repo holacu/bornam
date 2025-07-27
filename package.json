@@ -9,7 +9,7 @@
     "build": "echo 'No build step required'",
     "test": "echo 'No tests specified'",
     "railway:start": "node index.js",
-    "railway:build": "npm install --production",
+    "railway:build": "npm install --production --ignore-scripts",
     "postinstall": "echo 'Installation completed successfully'"
   },
   "keywords": [
@@ -34,10 +34,10 @@
   },
   "dependencies": {
     "bedrock-protocol": "^3.47.0",
-    "dotenv": "^17.2.1",
+    "dotenv": "^16.4.5",
     "mineflayer": "^4.30.0",
     "node-telegram-bot-api": "^0.66.0",
     "sqlite3": "^5.1.7",
-    "uuid": "^11.1.0"
+    "uuid": "^10.0.0"
   }
 }

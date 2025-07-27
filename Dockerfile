@@ -18,14 +18,18 @@ RUN apk add --no-cache \
     python3 \
     make \
     g++ \
+    gcc \
+    libc-dev \
+    cmake \
     sqlite \
+    git \
     && rm -rf /var/cache/apk/*
 
-# نسخ ملفات package.json و package-lock.json
-COPY package*.json ./
+# نسخ ملفات package.json و package-lock.json و .npmrc
+COPY package*.json .npmrc ./
 
 # تثبيت التبعيات
-RUN npm ci --only=production && \
+RUN npm install --only=production --ignore-scripts --no-audit --no-fund && \
     npm cache clean --force
 
 # نسخ باقي ملفات التطبيق

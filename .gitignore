@@ -137,3 +137,12 @@ admin-ids.txt
 *.bak
 *.backup
 *.old
+
+# Build artifacts
+build/
+dist/
+*.node
+
+# npm debug logs
+npm-debug.log*
+.npm/_logs/
