@@ -1,0 +1,47 @@
+{
+  "name": "minecraft-telegram-bot-manager",
+  "version": "2.0.0",
+  "description": "Telegram bot for managing Minecraft Java and Bedrock bots",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "deploy": "fly deploy",
+    "logs": "fly logs",
+    "status": "fly status"
+  },
+  "dependencies": {
+    "mineflayer": "^4.14.0",
+    "minecraft-protocol": "^1.44.1",
+    "minecraft-launcher-core": "^3.16.3",
+    "bedrock-protocol": "^3.47.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "sqlite3": "^5.1.6",
+    "uuid": "^9.0.1",
+    "moment": "^2.29.4",
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "minecraft",
+    "telegram",
+    "bot",
+    "mineflayer",
+    "bedrock",
+    "java"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/minecraft-telegram-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/minecraft-telegram-bot/issues"
+  },
+  "homepage": "https://github.com/yourusername/minecraft-telegram-bot#readme"
+}
