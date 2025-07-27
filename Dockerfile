@@ -57,5 +57,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "console.log('Health check passed')" || exit 1
 
-# تشغيل التطبيق
-CMD ["node", "index.js"]
+# تشغيل التطبيق مع startup script
+CMD ["node", "startup.js"]

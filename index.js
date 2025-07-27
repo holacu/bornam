@@ -50,6 +50,11 @@ class MinecraftBotSystem {
 
             this.isRunning = true;
 
+            // إشارات جاهزية واضحة للنشر
+            console.log('🚀 APPLICATION STARTED SUCCESSFULLY');
+            console.log(`🌐 Server listening on port ${process.env.PORT || 3000}`);
+            console.log('✅ READY TO ACCEPT CONNECTIONS');
+
             logger.info('✅ تم تشغيل النظام بنجاح!');
             logger.info('📱 بوت التلغرام جاهز للاستخدام');
             logger.info('🎮 يمكن الآن إنشاء بوتات ماينكرافت Java و Bedrock');
@@ -62,6 +67,13 @@ class MinecraftBotSystem {
             logger.info('   • واجهة إدارة للأدمن');
             logger.info('   • دعم سيرفرات Aternos وغيرها');
             logger.info('🔧 للحصول على المساعدة، استخدم الأمر /help في بوت التلغرام');
+
+            // إرسال heartbeat للتأكد من الجاهزية
+            setInterval(() => {
+                if (this.isRunning) {
+                    console.log(`💓 Heartbeat: ${new Date().toISOString()}`);
+                }
+            }, 30000); // كل 30 ثانية
 
         } catch (error) {
             logger.error('❌ خطأ في تشغيل النظام:', { error: error.message, stack: error.stack });

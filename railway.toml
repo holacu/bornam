@@ -4,16 +4,20 @@
 builder = "dockerfile"
 
 [deploy]
-# أمر بدء التطبيق
-startCommand = "node index.js"
+# أمر بدء التطبيق مع startup script
+startCommand = "node startup.js"
 
 # فحص صحة التطبيق
 healthcheckPath = "/health"
-healthcheckTimeout = 300
+healthcheckTimeout = 60
+healthcheckInterval = 10
 
 # إعادة التشغيل التلقائي
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 3
+restartPolicyMaxRetries = 5
+
+# إعدادات الشبكة
+watchPatterns = ["**/*.js", "**/*.json"]
 
 [environments.production]
 # متغيرات البيئة المطلوبة للإنتاج

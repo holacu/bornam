@@ -183,18 +183,29 @@ class HealthCheckServer {
             this.handleRequest(req, res);
         });
 
-        this.server.listen(this.port, () => {
+        this.server.listen(this.port, '0.0.0.0', () => {
             console.log(`🏥 Health check server running on port ${this.port}`);
             console.log(`📊 Health endpoints:`);
-            console.log(`   • http://localhost:${this.port}/health`);
-            console.log(`   • http://localhost:${this.port}/health/simple`);
-            console.log(`   • http://localhost:${this.port}/health/detailed`);
+            console.log(`   • http://0.0.0.0:${this.port}/health`);
+            console.log(`   • http://0.0.0.0:${this.port}/health/simple`);
+            console.log(`   • http://0.0.0.0:${this.port}/health/detailed`);
+
+            // إرسال إشارة جاهزية فورية
+            console.log('✅ Server is ready and listening');
         });
 
         // معالجة الأخطاء
         this.server.on('error', (error) => {
-            console.error('Health check server error:', error);
+            console.error('❌ Health check server error:', error);
+            if (error.code === 'EADDRINUSE') {
+                console.log(`⚠️ Port ${this.port} is in use, trying alternative port...`);
+                this.port = this.port + 1;
+                setTimeout(() => this.start(), 1000);
+            }
         });
+
+        // إضافة timeout للاستجابة السريعة
+        this.server.timeout = 5000; // 5 ثواني
 
         return this.server;
     }

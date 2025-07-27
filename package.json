@@ -4,7 +4,8 @@
   "description": "نظام متكامل لإنشاء وإدارة بوتات ماينكرافت Java و Bedrock عبر بوت التلغرام",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node startup.js",
+    "start:direct": "node index.js",
     "dev": "nodemon index.js",
     "build": "echo 'No build step required'",
     "test": "echo 'No tests specified'",
