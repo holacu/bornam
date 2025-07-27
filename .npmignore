@@ -1,0 +1,43 @@
+# ملفات يجب تجاهلها عند النشر
+node_modules/
+npm-debug.log*
+.npm
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ملفات التطوير
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# ملفات النسخ الاحتياطي
+*.backup
+*.bak
+*.old
+
+# ملفات النظام
+.DS_Store
+Thumbs.db
+
+# ملفات IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ملفات الاختبار
+test/
+tests/
+*.test.js
+*.spec.js
+
+# ملفات البناء المؤقتة
+build/
+dist/
+*.tgz
+*.tar.gz

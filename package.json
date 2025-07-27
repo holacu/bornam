@@ -33,11 +33,17 @@
     "url": "https://github.com/your-username/minecraft-telegram-bot-system.git"
   },
   "dependencies": {
-    "bedrock-protocol": "^3.47.0",
+    "bedrock-protocol": "^3.40.0",
     "dotenv": "^16.4.5",
     "mineflayer": "^4.30.0",
     "node-telegram-bot-api": "^0.66.0",
     "sqlite3": "^5.1.7",
     "uuid": "^10.0.0"
+  },
+  "resolutions": {
+    "raknet-native": "npm:empty-package@1.0.0"
+  },
+  "overrides": {
+    "raknet-native": "npm:empty-package@1.0.0"
   }
 }

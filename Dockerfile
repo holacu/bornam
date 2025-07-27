@@ -25,11 +25,12 @@ RUN apk add --no-cache \
     git \
     && rm -rf /var/cache/apk/*
 
-# نسخ ملفات package.json و package-lock.json و .npmrc
-COPY package*.json .npmrc ./
+# نسخ ملفات package.json و package-lock.json و .npmrc و install-fix.js
+COPY package*.json .npmrc install-fix.js ./
 
-# تثبيت التبعيات
-RUN npm install --only=production --ignore-scripts --no-audit --no-fund && \
+# تشغيل إصلاح التثبيت وتثبيت التبعيات
+RUN node install-fix.js && \
+    npm install --only=production --ignore-scripts --no-audit --no-fund --legacy-peer-deps && \
     npm cache clean --force
 
 # نسخ باقي ملفات التطبيق

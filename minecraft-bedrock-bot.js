@@ -1,4 +1,5 @@
-const bedrock = require('bedrock-protocol');
+// استخدام الملف الآمن لـ bedrock-protocol
+const bedrock = require('./bedrock-safe');
 const { EventEmitter } = require('events');
 
 class MinecraftBedrockBot extends EventEmitter {
