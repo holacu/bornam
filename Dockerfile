@@ -27,13 +27,18 @@ RUN apk add --no-cache \
     git \
     && rm -rf /var/cache/apk/*
 
-# نسخ ملفات package.json و package-lock.json و .npmrc و postinstall.js
-COPY package*.json .npmrc postinstall.js ./
+# نسخ ملفات package.json و package-lock.json و .npmrc
+COPY package*.json .npmrc ./
 
-# تشغيل postinstall وتثبيت التبعيات
-RUN node postinstall.js && \
-    npm install --only=production --ignore-scripts --no-audit --no-fund --legacy-peer-deps && \
+# تثبيت التبعيات مع تجاهل raknet-native
+RUN npm install --only=production --ignore-scripts --no-audit --no-fund --legacy-peer-deps || \
+    (echo "⚠️ فشل التثبيت الأول، محاولة بدون legacy-peer-deps..." && \
+     npm install --only=production --ignore-scripts --no-audit --no-fund) && \
     npm cache clean --force
+
+# نسخ postinstall.js وتشغيله لتنظيف raknet-native
+COPY postinstall.js ./
+RUN node postinstall.js || echo "⚠️ تعذر تشغيل postinstall"
 
 # نسخ باقي ملفات التطبيق
 COPY . .

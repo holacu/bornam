@@ -4,21 +4,32 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 بدء إزالة raknet-native...');
+console.log('🔧 بدء تنظيف raknet-native...');
 
-// مسار raknet-native
-const raknetPath = path.join(__dirname, 'node_modules', 'raknet-native');
+// مسارات محتملة لـ raknet-native
+const possiblePaths = [
+    path.join(__dirname, 'node_modules', 'raknet-native'),
+    path.join(__dirname, 'node_modules', 'bedrock-protocol', 'node_modules', 'raknet-native'),
+    path.join(__dirname, 'node_modules', '@types', 'raknet-native')
+];
 
-// إزالة raknet-native إذا كان موجود
-if (fs.existsSync(raknetPath)) {
-    try {
-        console.log('🗑️ إزالة raknet-native...');
-        fs.rmSync(raknetPath, { recursive: true, force: true });
-        console.log('✅ تم حذف raknet-native بنجاح');
-    } catch (error) {
-        console.log('⚠️ تعذر حذف raknet-native:', error.message);
+let removed = false;
+
+// إزالة raknet-native من جميع المسارات المحتملة
+possiblePaths.forEach(raknetPath => {
+    if (fs.existsSync(raknetPath)) {
+        try {
+            console.log(`🗑️ إزالة raknet-native من: ${raknetPath}`);
+            fs.rmSync(raknetPath, { recursive: true, force: true });
+            console.log('✅ تم حذف raknet-native بنجاح');
+            removed = true;
+        } catch (error) {
+            console.log('⚠️ تعذر حذف raknet-native:', error.message);
+        }
     }
-} else {
+});
+
+if (!removed) {
     console.log('✅ raknet-native غير موجود');
 }
 

@@ -1,4 +1,13 @@
-const bedrock = require('bedrock-protocol');
+// استخدام fallback آمن لـ bedrock-protocol
+let bedrock;
+try {
+    bedrock = require('bedrock-protocol');
+    console.log('✅ تم تحميل bedrock-protocol الأصلي');
+} catch (error) {
+    console.log('⚠️ فشل تحميل bedrock-protocol، استخدام fallback');
+    bedrock = require('./bedrock-fallback');
+}
+
 const { EventEmitter } = require('events');
 
 class MinecraftBedrockBot extends EventEmitter {
