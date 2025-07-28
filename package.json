@@ -1,0 +1,34 @@
+{
+  "name": "minecraft-telegram-bot",
+  "version": "2.0.0",
+  "description": "نظام متكامل لإنشاء وإدارة بوتات ماينكرافت Java و Bedrock عبر بوت التلغرام",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo 'No tests specified'"
+  },
+  "keywords": [
+    "minecraft",
+    "telegram",
+    "bot",
+    "java",
+    "bedrock",
+    "mineflayer"
+  ],
+  "author": "Minecraft Bot Developer",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-telegram-bot-api": "^0.66.0",
+    "mineflayer": "^4.30.0",
+    "bedrock-protocol": "^3.30.0",
+    "uuid": "^10.0.0"
+  },
+  "optionalDependencies": {
+    "sqlite3": "^5.1.7"
+  }
+}

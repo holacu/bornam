@@ -1,0 +1,39 @@
+# ملف تكوين Railway للنشر
+
+[build]
+# استخدام Dockerfile للبناء
+builder = "dockerfile"
+
+[deploy]
+# أمر بدء التطبيق
+startCommand = "node index.js"
+
+# فحص صحة التطبيق
+healthcheckPath = "/"
+healthcheckTimeout = 60
+healthcheckInterval = 30
+
+# إعادة التشغيل التلقائي
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
+
+# مراقبة الملفات
+watchPatterns = ["**/*.js", "**/*.json"]
+
+[environments.production]
+# متغيرات البيئة للإنتاج
+[environments.production.variables]
+NODE_ENV = "production"
+LOG_LEVEL = "info"
+DATABASE_PATH = "/tmp/minecraft_bot.db"
+MAX_BOTS_PER_USER = "3"
+MAX_RECONNECT_ATTEMPTS = "3"
+RATE_LIMIT_MAX_REQUESTS = "30"
+ADMIN_ONLY_MODE = "false"
+MONITORING_ENABLED = "true"
+ALERTS_ENABLED = "true"
+TZ = "Asia/Riyadh"
+
+# متغيرات يجب تعيينها يدوياً في Railway Dashboard:
+# TELEGRAM_BOT_TOKEN = "your_bot_token_here"
+# ADMIN_IDS = "123456789,987654321"
