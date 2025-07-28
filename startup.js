@@ -46,21 +46,41 @@ try {
     console.log('⚠️ Dependencies check failed, continuing anyway:', error.message);
 }
 
-// بدء health check بسيط فوراً
-console.log('🏥 Starting health check server...');
-require('./simple-health.js');
+// إنشاء health server مباشرة في startup.js
+const http = require('http');
+const port = process.env.PORT || 3000;
 
-// انتظار قصير ثم بدء التطبيق الرئيسي
-setTimeout(() => {
-    console.log('🔄 Starting main application...');
-    try {
-        require('./index.js');
-    } catch (error) {
-        console.error('❌ Failed to start main application:', error.message);
-        // حتى لو فشل التطبيق الرئيسي، health check سيبقى يعمل
-        console.log('⚠️ Health check server will continue running');
-    }
-}, 2000); // انتظار ثانيتين
+console.log('🏥 Starting immediate health check server...');
+
+const healthServer = http.createServer((req, res) => {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        service: 'minecraft-telegram-bot'
+    }));
+});
+
+healthServer.listen(port, '0.0.0.0', () => {
+    console.log(`✅ Health server running on port ${port}`);
+    console.log('🌐 Health endpoints available');
+
+    // بدء التطبيق الرئيسي بعد تأكيد تشغيل health server
+    setTimeout(() => {
+        console.log('🔄 Starting main application...');
+        try {
+            require('./index.js');
+        } catch (error) {
+            console.error('❌ Failed to start main application:', error.message);
+            console.log('⚠️ Health check server will continue running');
+        }
+    }, 1000);
+});
+
+healthServer.on('error', (error) => {
+    console.error('❌ Health server error:', error);
+    process.exit(1);
+});
 
 // معالجة إشارات الإيقاف
 process.on('SIGTERM', () => {
