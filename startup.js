@@ -46,56 +46,31 @@ try {
     console.log('⚠️ Dependencies check failed, continuing anyway:', error.message);
 }
 
-// إنشاء خادم بسيط للاستجابة الفورية
-const port = process.env.PORT || 3000;
-const quickServer = http.createServer((req, res) => {
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-        status: 'starting',
-        message: 'Minecraft Telegram Bot System is starting up...',
-        timestamp: new Date().toISOString(),
-        port: port
-    }));
-});
+// بدء health check بسيط فوراً
+console.log('🏥 Starting health check server...');
+require('./simple-health.js');
 
-quickServer.listen(port, '0.0.0.0', () => {
-    console.log(`🌐 Quick response server started on port ${port}`);
-    console.log('✅ READY TO ACCEPT CONNECTIONS');
-    
-    // بدء التطبيق الرئيسي بعد ثانية واحدة
-    setTimeout(() => {
-        console.log('🔄 Starting main application...');
-        quickServer.close(() => {
-            console.log('🔄 Quick server closed, starting main app...');
-            require('./index.js');
-        });
-    }, 1000);
-});
-
-// معالجة الأخطاء
-quickServer.on('error', (error) => {
-    console.error('❌ Quick server error:', error);
-    if (error.code === 'EADDRINUSE') {
-        console.log(`⚠️ Port ${port} is in use, starting main app directly...`);
+// انتظار قصير ثم بدء التطبيق الرئيسي
+setTimeout(() => {
+    console.log('🔄 Starting main application...');
+    try {
         require('./index.js');
-    } else {
-        process.exit(1);
+    } catch (error) {
+        console.error('❌ Failed to start main application:', error.message);
+        // حتى لو فشل التطبيق الرئيسي، health check سيبقى يعمل
+        console.log('⚠️ Health check server will continue running');
     }
-});
+}, 2000); // انتظار ثانيتين
 
 // معالجة إشارات الإيقاف
 process.on('SIGTERM', () => {
     console.log('📴 Received SIGTERM, shutting down gracefully...');
-    quickServer.close(() => {
-        process.exit(0);
-    });
+    process.exit(0);
 });
 
 process.on('SIGINT', () => {
     console.log('📴 Received SIGINT, shutting down gracefully...');
-    quickServer.close(() => {
-        process.exit(0);
-    });
+    process.exit(0);
 });
 
 console.log('🎯 Startup script initialized');

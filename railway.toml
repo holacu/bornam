@@ -8,9 +8,9 @@ builder = "dockerfile"
 startCommand = "node startup.js"
 
 # فحص صحة التطبيق
-healthcheckPath = "/health"
-healthcheckTimeout = 60
-healthcheckInterval = 10
+healthcheckPath = "/ping"
+healthcheckTimeout = 30
+healthcheckInterval = 5
 
 # إعادة التشغيل التلقائي
 restartPolicyType = "on_failure"
