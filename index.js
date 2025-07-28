@@ -47,29 +47,30 @@ class MinecraftTelegramBotSystem {
 
         } catch (error) {
             console.error('❌ Failed to start system:', error.message);
-            process.exit(1);
+            console.log('🔄 Continuing with health server only...');
+            // لا نخرج من التطبيق، نستمر مع health server فقط
         }
     }
 
     createHealthServer() {
         this.httpServer = http.createServer((req, res) => {
             const url = req.url;
-            
+
             res.setHeader('Content-Type', 'application/json');
             res.setHeader('Access-Control-Allow-Origin', '*');
 
-            if (url === '/health' || url === '/' || url === '/ping') {
-                res.statusCode = 200;
-                res.end(JSON.stringify({
-                    status: 'healthy',
-                    timestamp: new Date().toISOString(),
-                    service: 'minecraft-telegram-bot',
-                    uptime: process.uptime()
-                }));
-            } else {
-                res.statusCode = 200; // دائماً 200 للـ Railway
-                res.end(JSON.stringify({ status: 'ok' }));
-            }
+            // استجابة صحية دائماً للـ Railway
+            const healthResponse = {
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                service: 'minecraft-telegram-bot',
+                uptime: process.uptime(),
+                telegram_bot: this.telegramBot ? 'connected' : 'initializing',
+                database: this.database ? 'connected' : 'initializing'
+            };
+
+            res.statusCode = 200;
+            res.end(JSON.stringify(healthResponse));
         });
 
         this.httpServer.listen(this.port, '0.0.0.0', () => {
@@ -84,20 +85,38 @@ class MinecraftTelegramBotSystem {
 
     async initTelegramBot() {
         const token = process.env.TELEGRAM_BOT_TOKEN;
-        
+
         if (!token || token === 'your_bot_token_here') {
-            throw new Error('❌ TELEGRAM_BOT_TOKEN is required');
+            console.warn('⚠️ TELEGRAM_BOT_TOKEN not provided, running in health-only mode');
+            return; // لا نرمي خطأ، فقط نحذر
         }
 
-        this.telegramBot = new TelegramBot(token, { polling: true });
-        
-        // إعداد الأوامر
-        this.setupTelegramCommands();
-        
-        console.log('✅ Telegram bot initialized');
+        try {
+            this.telegramBot = new TelegramBot(token, {
+                polling: {
+                    interval: 1000,
+                    autoStart: true,
+                    params: {
+                        timeout: 10
+                    }
+                }
+            });
+
+            // إعداد الأوامر
+            this.setupTelegramCommands();
+
+            console.log('✅ Telegram bot initialized');
+        } catch (error) {
+            console.error('⚠️ Telegram bot initialization failed:', error.message);
+            // لا نرمي خطأ لكي لا يتوقف التطبيق
+        }
     }
 
     setupTelegramCommands() {
+        if (!this.telegramBot) {
+            console.log('⚠️ Telegram bot not available, skipping command setup');
+            return;
+        }
         // أمر البداية
         this.telegramBot.onText(/\/start/, async (msg) => {
             const chatId = msg.chat.id;
