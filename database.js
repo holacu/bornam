@@ -1,29 +1,49 @@
+const fs = require('fs');
+const path = require('path');
+
 // محاولة تحميل sqlite3 مع fallback آمن
 let sqlite3;
-let useFallback = false;
+let useSQLite = false;
 
 try {
     sqlite3 = require('sqlite3').verbose();
-    console.log('✅ تم تحميل sqlite3 بنجاح');
+    useSQLite = true;
+    console.log('✅ SQLite3 loaded successfully');
 } catch (error) {
-    console.log('⚠️ فشل تحميل sqlite3، استخدام fallback:', error.message);
-    useFallback = true;
-    const DatabaseFallback = require('./database-fallback');
-    module.exports = DatabaseFallback;
-    return;
+    console.log('⚠️ SQLite3 not available, using JSON fallback:', error.message);
+    useSQLite = false;
 }
-
-const path = require('path');
-const fs = require('fs');
-
-// تحميل متغيرات البيئة
-require('dotenv').config();
 
 class Database {
     constructor() {
-        // استخدام مسار قاعدة البيانات من متغيرات البيئة أو المسار الافتراضي
-        this.dbPath = process.env.DATABASE_PATH || path.join(__dirname, 'minecraft_bot.db');
+        this.dbPath = process.env.DATABASE_PATH || '/tmp/minecraft_bot.db';
+        this.jsonPath = '/tmp/minecraft_bot_data.json';
+        this.db = null;
+        this.data = null;
+        this.initialized = false;
 
+        if (useSQLite) {
+            console.log(`📁 Using SQLite database: ${this.dbPath}`);
+        } else {
+            console.log(`📁 Using JSON fallback: ${this.jsonPath}`);
+        }
+    }
+
+    async init() {
+        if (this.initialized) return this;
+
+        if (useSQLite) {
+            await this.initSQLite();
+        } else {
+            await this.initJSON();
+        }
+
+        this.initialized = true;
+        console.log('✅ Database initialized');
+        return this;
+    }
+
+    async initSQLite() {
         // التأكد من وجود المجلد
         const dbDir = path.dirname(this.dbPath);
         if (!fs.existsSync(dbDir)) {
@@ -31,20 +51,7 @@ class Database {
         }
 
         this.db = new sqlite3.Database(this.dbPath);
-        this.initialized = false;
 
-        console.log(`📁 قاعدة البيانات: ${this.dbPath}`);
-    }
-
-    async init() {
-        if (!this.initialized) {
-            await this.initTables();
-            this.initialized = true;
-        }
-        return this;
-    }
-
-    initTables() {
         return new Promise((resolve, reject) => {
             this.db.serialize(() => {
                 // جدول المستخدمين
@@ -53,78 +60,86 @@ class Database {
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         telegram_id INTEGER UNIQUE NOT NULL,
                         username TEXT,
-                        is_admin BOOLEAN DEFAULT 0,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                     )
-                `);
+                `, (err) => {
+                    if (err) reject(err);
+                });
 
                 // جدول البوتات
                 this.db.run(`
                     CREATE TABLE IF NOT EXISTS bots (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         user_id INTEGER NOT NULL,
-                        bot_name TEXT NOT NULL,
-                        server_host TEXT NOT NULL,
-                        server_port INTEGER NOT NULL,
-                        minecraft_version TEXT NOT NULL,
-                        edition TEXT NOT NULL CHECK(edition IN ('java', 'bedrock')),
+                        name TEXT NOT NULL,
+                        host TEXT NOT NULL,
+                        port INTEGER NOT NULL,
+                        type TEXT NOT NULL CHECK(type IN ('java', 'bedrock')),
+                        username TEXT NOT NULL,
+                        version TEXT,
                         status TEXT DEFAULT 'stopped' CHECK(status IN ('running', 'stopped', 'error')),
                         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (user_id) REFERENCES users (id)
-                    )
-                `);
-
-                // جدول إحصائيات البوتات
-                this.db.run(`
-                    CREATE TABLE IF NOT EXISTS bot_stats (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        bot_id INTEGER NOT NULL,
-                        connection_time DATETIME,
-                        disconnection_time DATETIME,
-                        duration_minutes INTEGER,
-                        error_message TEXT,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        FOREIGN KEY (bot_id) REFERENCES bots (id)
-                    )
-                `);
-
-                // جدول الإعدادات العامة
-                this.db.run(`
-                    CREATE TABLE IF NOT EXISTS settings (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        key TEXT UNIQUE NOT NULL,
-                        value TEXT NOT NULL,
-                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                        FOREIGN KEY (user_id) REFERENCES users (telegram_id)
                     )
                 `, (err) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    // إدراج الإعدادات الافتراضية
-                    this.db.run(`
-                        INSERT OR IGNORE INTO settings (key, value) VALUES
-                        ('max_bots_per_user', '3'),
-                        ('supported_java_versions', '1.21.8,1.21.7,1.21.6,1.21.5,1.21.4'),
-                        ('supported_bedrock_versions', '1.21.94,1.21.93,1.21.90,1.21.70,1.21.50')
-                    `, (err) => {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve();
-                        }
-                    });
+                    if (err) reject(err);
+                    else resolve();
                 });
             });
         });
     }
 
-    // إدارة المستخدمين
-    async createUser(telegramId, username = null) {
+    async initJSON() {
+        // إنشاء المجلد إذا لم يكن موجوداً
+        const jsonDir = path.dirname(this.jsonPath);
+        if (!fs.existsSync(jsonDir)) {
+            fs.mkdirSync(jsonDir, { recursive: true });
+        }
+
+        // تحميل البيانات الموجودة أو إنشاء بيانات جديدة
+        if (fs.existsSync(this.jsonPath)) {
+            try {
+                const rawData = fs.readFileSync(this.jsonPath, 'utf8');
+                this.data = JSON.parse(rawData);
+            } catch (error) {
+                console.log('⚠️ Failed to load existing data, creating new:', error.message);
+                this.data = this.createEmptyData();
+            }
+        } else {
+            this.data = this.createEmptyData();
+        }
+
+        // حفظ البيانات
+        this.saveJSON();
+    }
+
+    createEmptyData() {
+        return {
+            users: [],
+            bots: [],
+            lastUserId: 0,
+            lastBotId: 0
+        };
+    }
+
+    saveJSON() {
+        try {
+            fs.writeFileSync(this.jsonPath, JSON.stringify(this.data, null, 2));
+        } catch (error) {
+            console.error('❌ Failed to save JSON data:', error.message);
+        }
+    }
+
+    // إضافة مستخدم
+    async addUser(telegramId, username) {
+        if (useSQLite) {
+            return this.addUserSQLite(telegramId, username);
+        } else {
+            return this.addUserJSON(telegramId, username);
+        }
+    }
+
+    async addUserSQLite(telegramId, username) {
         return new Promise((resolve, reject) => {
             this.db.run(
                 'INSERT OR IGNORE INTO users (telegram_id, username) VALUES (?, ?)',
@@ -137,72 +152,41 @@ class Database {
         });
     }
 
-    async getUser(telegramId) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM users WHERE telegram_id = ?',
-                [telegramId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
+    addUserJSON(telegramId, username) {
+        const existingUser = this.data.users.find(u => u.telegram_id === telegramId);
+        if (existingUser) {
+            existingUser.username = username; // تحديث اسم المستخدم
+            this.saveJSON();
+            return existingUser.id;
+        }
+
+        const newUser = {
+            id: ++this.data.lastUserId,
+            telegram_id: telegramId,
+            username: username,
+            created_at: new Date().toISOString()
+        };
+
+        this.data.users.push(newUser);
+        this.saveJSON();
+        return newUser.id;
     }
 
-    async getUserById(userId) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM users WHERE id = ?',
-                [userId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
+    // إنشاء بوت
+    async createBot(userId, config) {
+        if (useSQLite) {
+            return this.createBotSQLite(userId, config);
+        } else {
+            return this.createBotJSON(userId, config);
+        }
     }
 
-    async getAllUsers() {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT * FROM users ORDER BY created_at DESC',
-                [],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows || []);
-                }
-            );
-        });
-    }
-
-    async updateUser(telegramId, updates) {
-        const fields = Object.keys(updates).map(key => `${key} = ?`).join(', ');
-        const values = Object.values(updates);
-        values.push(telegramId);
-
+    async createBotSQLite(userId, config) {
         return new Promise((resolve, reject) => {
             this.db.run(
-                `UPDATE users SET ${fields}, updated_at = CURRENT_TIMESTAMP WHERE telegram_id = ?`,
-                values,
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes);
-                }
-            );
-        });
-    }
-
-    async setAdmin(telegramId, isAdmin = true) {
-        return this.updateUser(telegramId, { is_admin: isAdmin ? 1 : 0 });
-    }
-
-    // إدارة البوتات
-    async createBot(userId, botName, serverHost, serverPort, minecraftVersion, edition) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO bots (user_id, bot_name, server_host, server_port, minecraft_version, edition) VALUES (?, ?, ?, ?, ?, ?)',
-                [userId, botName, serverHost, serverPort, minecraftVersion, edition],
+                `INSERT INTO bots (user_id, name, host, port, type, username, version) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [userId, config.name, config.host, config.port, config.type, config.username, config.version],
                 function(err) {
                     if (err) reject(err);
                     else resolve(this.lastID);
@@ -211,24 +195,39 @@ class Database {
         });
     }
 
-    async getUserBots(userId) {
+    createBotJSON(userId, config) {
+        const newBot = {
+            id: ++this.data.lastBotId,
+            user_id: userId,
+            name: config.name,
+            host: config.host,
+            port: config.port,
+            type: config.type,
+            username: config.username,
+            version: config.version || (config.type === 'java' ? '1.20.1' : '1.21.0'),
+            status: 'stopped',
+            created_at: new Date().toISOString()
+        };
+
+        this.data.bots.push(newBot);
+        this.saveJSON();
+        return newBot.id;
+    }
+
+    // الحصول على بوتات المستخدم
+    async getUserBots(telegramId) {
+        if (useSQLite) {
+            return this.getUserBotsSQLite(telegramId);
+        } else {
+            return this.getUserBotsJSON(telegramId);
+        }
+    }
+
+    async getUserBotsSQLite(telegramId) {
         return new Promise((resolve, reject) => {
             this.db.all(
                 'SELECT * FROM bots WHERE user_id = ? ORDER BY created_at DESC',
-                [userId],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                }
-            );
-        });
-    }
-
-    async getAllBots() {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT b.*, u.username FROM bots b LEFT JOIN users u ON b.user_id = u.id ORDER BY b.created_at DESC',
-                [],
+                [telegramId],
                 (err, rows) => {
                     if (err) reject(err);
                     else resolve(rows || []);
@@ -237,23 +236,23 @@ class Database {
         });
     }
 
-    async getBot(botId) {
-        return new Promise((resolve, reject) => {
-            this.db.get(
-                'SELECT * FROM bots WHERE id = ?',
-                [botId],
-                (err, row) => {
-                    if (err) reject(err);
-                    else resolve(row);
-                }
-            );
-        });
+    getUserBotsJSON(telegramId) {
+        return this.data.bots.filter(bot => bot.user_id === telegramId);
     }
 
-    async updateBotStatus(botId, status, errorMessage = null) {
+    // تحديث حالة البوت
+    async updateBotStatus(botId, status) {
+        if (useSQLite) {
+            return this.updateBotStatusSQLite(botId, status);
+        } else {
+            return this.updateBotStatusJSON(botId, status);
+        }
+    }
+
+    async updateBotStatusSQLite(botId, status) {
         return new Promise((resolve, reject) => {
             this.db.run(
-                'UPDATE bots SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+                'UPDATE bots SET status = ? WHERE id = ?',
                 [status, botId],
                 function(err) {
                     if (err) reject(err);
@@ -263,107 +262,26 @@ class Database {
         });
     }
 
-    async updateBotName(botId, name) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'UPDATE bots SET bot_name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [name, botId],
-                function(err) {
-                    if (err) {
-                        console.error('خطأ في تحديث اسم البوت:', err);
-                        reject(err);
-                    } else {
-                        console.log(`✅ تم تحديث اسم البوت ${botId} إلى ${name}`);
-                        resolve(this.changes > 0);
-                    }
-                }
-            );
-        });
+    updateBotStatusJSON(botId, status) {
+        const bot = this.data.bots.find(b => b.id === botId);
+        if (bot) {
+            bot.status = status;
+            this.saveJSON();
+            return 1;
+        }
+        return 0;
     }
 
-    async updateBotServer(botId, host, port) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'UPDATE bots SET host = ?, port = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
-                [host, port, botId],
-                function(err) {
-                    err ? reject(err) : resolve(this.changes > 0);
-                }
-            );
-        });
-    }
-
-    async clearAllBots() {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'DELETE FROM bots',
-                [],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes > 0);
-                }
-            );
-        });
-    }
-
-    async clearUserBots(userId) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'DELETE FROM bots WHERE user_id = ?',
-                [userId],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes > 0);
-                }
-            );
-        });
-    }
-
-    async cleanupDatabase() {
-        return new Promise((resolve, reject) => {
-            // حذف البوتات المتوقفة والتي بها أخطاء
-            this.db.run(
-                'DELETE FROM bots WHERE status IN ("stopped", "error")',
-                [],
-                (err) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-
-                    const deletedBots = this.changes;
-
-                    // حذف الإحصائيات القديمة (أكثر من 30 يوم)
-                    this.db.run(
-                        'DELETE FROM bot_stats WHERE created_at < datetime("now", "-30 days")',
-                        [],
-                        (err) => {
-                            if (err) {
-                                reject(err);
-                                return;
-                            }
-
-                            const deletedStats = this.changes;
-
-                            // تنظيف قاعدة البيانات (VACUUM)
-                            this.db.run('VACUUM', [], (err) => {
-                                if (err) {
-                                    reject(err);
-                                } else {
-                                    resolve({
-                                        deletedBots,
-                                        deletedStats
-                                    });
-                                }
-                            });
-                        }
-                    );
-                }
-            );
-        });
-    }
-
+    // حذف بوت
     async deleteBot(botId) {
+        if (useSQLite) {
+            return this.deleteBotSQLite(botId);
+        } else {
+            return this.deleteBotJSON(botId);
+        }
+    }
+
+    async deleteBotSQLite(botId) {
         return new Promise((resolve, reject) => {
             this.db.run(
                 'DELETE FROM bots WHERE id = ?',
@@ -376,97 +294,89 @@ class Database {
         });
     }
 
-    // إحصائيات البوتات
-    async addBotStat(botId, connectionTime, disconnectionTime = null, errorMessage = null) {
-        const duration = disconnectionTime ? 
-            Math.floor((new Date(disconnectionTime) - new Date(connectionTime)) / 60000) : null;
-
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT INTO bot_stats (bot_id, connection_time, disconnection_time, duration_minutes, error_message) VALUES (?, ?, ?, ?, ?)',
-                [botId, connectionTime, disconnectionTime, duration, errorMessage],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                }
-            );
-        });
+    deleteBotJSON(botId) {
+        const index = this.data.bots.findIndex(b => b.id === botId);
+        if (index !== -1) {
+            this.data.bots.splice(index, 1);
+            this.saveJSON();
+            return 1;
+        }
+        return 0;
     }
 
-    async getBotStats(botId, limit = 10) {
-        return new Promise((resolve, reject) => {
-            this.db.all(
-                'SELECT * FROM bot_stats WHERE bot_id = ? ORDER BY created_at DESC LIMIT ?',
-                [botId, limit],
-                (err, rows) => {
-                    if (err) reject(err);
-                    else resolve(rows);
-                }
-            );
-        });
+    // الحصول على بوت بالمعرف
+    async getBot(botId) {
+        if (useSQLite) {
+            return this.getBotSQLite(botId);
+        } else {
+            return this.getBotJSON(botId);
+        }
     }
 
-    // الإعدادات
-    async getSetting(key) {
+    async getBotSQLite(botId) {
         return new Promise((resolve, reject) => {
             this.db.get(
-                'SELECT value FROM settings WHERE key = ?',
-                [key],
+                'SELECT * FROM bots WHERE id = ?',
+                [botId],
                 (err, row) => {
                     if (err) reject(err);
-                    else resolve(row ? row.value : null);
+                    else resolve(row);
                 }
             );
         });
     }
 
-    async setSetting(key, value) {
-        return new Promise((resolve, reject) => {
-            this.db.run(
-                'INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
-                [key, value],
-                function(err) {
-                    if (err) reject(err);
-                    else resolve(this.changes);
-                }
-            );
-        });
+    getBotJSON(botId) {
+        return this.data.bots.find(b => b.id === botId);
     }
 
-    // إحصائيات عامة
-    async getGeneralStats() {
-        return new Promise((resolve, reject) => {
-            const stats = {};
-            
-            // عدد المستخدمين
-            this.db.get('SELECT COUNT(*) as count FROM users', (err, row) => {
-                if (err) return reject(err);
-                stats.totalUsers = row.count;
-                
-                // عدد البوتات
-                this.db.get('SELECT COUNT(*) as count FROM bots', (err, row) => {
-                    if (err) return reject(err);
-                    stats.totalBots = row.count;
-                    
-                    // البوتات النشطة
-                    this.db.get('SELECT COUNT(*) as count FROM bots WHERE status = "running"', (err, row) => {
-                        if (err) return reject(err);
-                        stats.activeBots = row.count;
-                        
-                        // إجمالي وقت التشغيل
-                        this.db.get('SELECT SUM(duration_minutes) as total FROM bot_stats WHERE duration_minutes IS NOT NULL', (err, row) => {
-                            if (err) return reject(err);
-                            stats.totalRuntime = row.total || 0;
-                            resolve(stats);
-                        });
-                    });
-                });
-            });
-        });
-    }
-
+    // إغلاق قاعدة البيانات
     close() {
-        this.db.close();
+        if (useSQLite && this.db) {
+            this.db.close((err) => {
+                if (err) {
+                    console.error('❌ Error closing database:', err.message);
+                } else {
+                    console.log('✅ Database connection closed');
+                }
+            });
+        }
+    }
+
+    // إحصائيات
+    async getStats() {
+        if (useSQLite) {
+            return this.getStatsSQLite();
+        } else {
+            return this.getStatsJSON();
+        }
+    }
+
+    async getStatsSQLite() {
+        return new Promise((resolve, reject) => {
+            this.db.all(
+                `SELECT 
+                    (SELECT COUNT(*) FROM users) as total_users,
+                    (SELECT COUNT(*) FROM bots) as total_bots,
+                    (SELECT COUNT(*) FROM bots WHERE status = 'running') as running_bots,
+                    (SELECT COUNT(*) FROM bots WHERE type = 'java') as java_bots,
+                    (SELECT COUNT(*) FROM bots WHERE type = 'bedrock') as bedrock_bots`,
+                (err, rows) => {
+                    if (err) reject(err);
+                    else resolve(rows[0]);
+                }
+            );
+        });
+    }
+
+    getStatsJSON() {
+        return {
+            total_users: this.data.users.length,
+            total_bots: this.data.bots.length,
+            running_bots: this.data.bots.filter(b => b.status === 'running').length,
+            java_bots: this.data.bots.filter(b => b.type === 'java').length,
+            bedrock_bots: this.data.bots.filter(b => b.type === 'bedrock').length
+        };
     }
 }
 

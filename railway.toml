@@ -1,59 +1,39 @@
 # ملف تكوين Railway للنشر
+
 [build]
 # استخدام Dockerfile للبناء
 builder = "dockerfile"
 
 [deploy]
-# أمر بدء التطبيق مع startup script
-startCommand = "node startup.js"
+# أمر بدء التطبيق
+startCommand = "node index.js"
 
 # فحص صحة التطبيق
-healthcheckPath = "/ping"
+healthcheckPath = "/health"
 healthcheckTimeout = 30
-healthcheckInterval = 5
+healthcheckInterval = 10
 
 # إعادة التشغيل التلقائي
 restartPolicyType = "on_failure"
-restartPolicyMaxRetries = 5
+restartPolicyMaxRetries = 3
 
-# إعدادات الشبكة
+# مراقبة الملفات
 watchPatterns = ["**/*.js", "**/*.json"]
 
 [environments.production]
-# متغيرات البيئة المطلوبة للإنتاج
+# متغيرات البيئة للإنتاج
 [environments.production.variables]
 NODE_ENV = "production"
 LOG_LEVEL = "info"
 DATABASE_PATH = "/tmp/minecraft_bot.db"
-DATABASE_BACKUP_ENABLED = "true"
 MAX_BOTS_PER_USER = "3"
-ADMIN_ONLY_MODE = "false"
+MAX_RECONNECT_ATTEMPTS = "3"
 RATE_LIMIT_MAX_REQUESTS = "30"
-CONNECTION_TIMEOUT = "30"
-MAX_RECONNECT_ATTEMPTS = "5"
-LOG_CHAT = "true"
-LOG_COMMANDS = "true"
-MAX_MEMORY_USAGE = "512"
-GC_INTERVAL = "300000"
-STATS_UPDATE_INTERVAL = "60000"
+ADMIN_ONLY_MODE = "false"
 MONITORING_ENABLED = "true"
-MONITORING_INTERVAL = "60000"
 ALERTS_ENABLED = "true"
-MEMORY_ALERT_THRESHOLD = "80"
-ERROR_RATE_THRESHOLD = "10"
-DEBUG_MODE = "false"
-TEST_MODE = "false"
-SIMULATE_ERRORS = "false"
 TZ = "Asia/Riyadh"
 
-# متغيرات يجب تعيينها يدوياً في Railway Dashboard
+# متغيرات يجب تعيينها يدوياً في Railway Dashboard:
 # TELEGRAM_BOT_TOKEN = "your_bot_token_here"
 # ADMIN_IDS = "123456789,987654321"
-
-[environments.development]
-# متغيرات البيئة للتطوير
-[environments.development.variables]
-NODE_ENV = "development"
-LOG_LEVEL = "debug"
-DEBUG_MODE = "true"
-DATABASE_PATH = "/tmp/minecraft_bot_dev.db"

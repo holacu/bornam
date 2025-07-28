@@ -1,12 +1,10 @@
-# استخدام Node.js 22 LTS كصورة أساسية (مطلوب لـ mineflayer)
+# استخدام Node.js 22 LTS (مطلوب لـ mineflayer)
 FROM node:22-alpine
 
 # تعيين متغيرات البيئة
 ENV NODE_ENV=production
 ENV NPM_CONFIG_LOGLEVEL=warn
 ENV NPM_CONFIG_PROGRESS=false
-ENV NPM_CONFIG_AUDIT=false
-ENV NPM_CONFIG_FUND=false
 
 # إنشاء مجلد العمل
 WORKDIR /app
@@ -22,42 +20,33 @@ RUN apk add --no-cache \
     g++ \
     gcc \
     libc-dev \
-    cmake \
     sqlite \
     git \
     && rm -rf /var/cache/apk/*
 
-# نسخ ملفات package.json و package-lock.json و .npmrc
-COPY package*.json .npmrc ./
+# نسخ ملفات package.json
+COPY package*.json ./
 
-# تثبيت التبعيات مع تجاهل المكتبات المشكلة
-RUN npm install --only=production --ignore-scripts --no-audit --no-fund --legacy-peer-deps --ignore-optional || \
-    (echo "⚠️ فشل التثبيت الأول، محاولة بدون optional dependencies..." && \
-     npm install --only=production --ignore-scripts --no-audit --no-fund --ignore-optional) || \
-    (echo "⚠️ فشل التثبيت الثاني، محاولة أساسية..." && \
-     npm install --ignore-scripts --no-audit --no-fund) && \
+# تثبيت التبعيات
+RUN npm ci --only=production --ignore-scripts && \
     npm cache clean --force
-
-# نسخ postinstall.js وتشغيله لتنظيف raknet-native
-COPY postinstall.js ./
-RUN node postinstall.js || echo "⚠️ تعذر تشغيل postinstall"
 
 # نسخ باقي ملفات التطبيق
 COPY . .
 
-# إنشاء المجلدات المطلوبة
-RUN mkdir -p /tmp/logs /tmp/backups && \
-    chown -R nodejs:nodejs /app /tmp/logs /tmp/backups
+# إنشاء المجلدات المطلوبة وتعيين الصلاحيات
+RUN mkdir -p /tmp/logs /tmp/data && \
+    chown -R nodejs:nodejs /app /tmp/logs /tmp/data
 
 # التبديل إلى المستخدم غير الجذر
 USER nodejs
 
-# كشف المنفذ (Railway سيحدد المنفذ تلقائياً)
+# كشف المنفذ
 EXPOSE 3000
 
 # فحص صحة التطبيق
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD node -e "console.log('Health check passed')" || exit 1
 
-# تشغيل التطبيق مع startup script
-CMD ["node", "startup.js"]
+# تشغيل التطبيق
+CMD ["node", "index.js"]

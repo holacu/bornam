@@ -4,16 +4,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-backups/
-
-# Logs
-logs/
-*.log
-
 # Environment variables
 .env
 .env.local
@@ -21,38 +11,17 @@ logs/
 .env.test.local
 .env.production.local
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
-# IDE files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Config files with sensitive data
-config.local.js
-secrets.js
-
-# Build outputs
-dist/
-build/
-
-# Coverage reports
-coverage/
-.nyc_output/
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 
 # Runtime data
 pids/
@@ -60,17 +29,30 @@ pids/
 *.seed
 *.pid.lock
 
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output
+
+# Grunt intermediate storage
+.grunt
+
+# Bower dependency directory
+bower_components
+
+# node-waf configuration
+.lock-wscript
+
+# Compiled binary addons
+build/Release
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
 # Optional npm cache directory
 .npm
-
-# Optional eslint cache
-.eslintcache
-
-# Microbundle cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
 
 # Optional REPL history
 .node_repl_history
@@ -83,66 +65,28 @@ pids/
 
 # dotenv environment variables file
 .env
-.env.test
 
-# parcel-bundler cache (https://parceljs.org/)
-.cache
-.parcel-cache
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Next.js build output
-.next
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Gatsby files
-.cache/
-public
-
-# Storybook build outputs
-.out
-.storybook-out
-
-# Temporary folders
+# Temporary files
 tmp/
 temp/
-
-# Railway specific
-.railway/
-
-# Additional database paths
-/tmp/minecraft_bot.db
-/tmp/backups/
-/tmp/logs/
-
-# Bot tokens and sensitive config
-bot-tokens.txt
-admin-ids.txt
-
-# Certificates and keys
-*.pem
-*.key
-*.crt
-*.p12
-*.pfx
-
-# Archive files
-*.zip
-*.tar.gz
-*.rar
-*.7z
+*.tmp
 
 # Backup files
 *.bak
 *.backup
-*.old
-
-# Build artifacts
-build/
-dist/
-*.node
-
-# npm debug logs
-npm-debug.log*
-.npm/_logs/
